@@ -1,0 +1,7 @@
+{
+    "objectscript.conn": {
+        "server": "principal",
+        "ns": "HATTRICK",
+        "active": true
+    }
+}
