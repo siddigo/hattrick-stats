@@ -1,0 +1,134 @@
+ROUTINE Scrap
+Scrap ;
+    ;
+    quit "Não chamar a rotina diretamente!"
+    ;
+    ; set sc=$$GetTeam^Scrap(426888,.response)
+GetTeam(teamId,response)    ;
+    new sc
+    set sc=1
+    ;
+    new request
+    ;
+    set response=""
+    ;
+    set request=##class(%Net.HttpRequest).%New()
+    ;
+    set request.Server="www83.hattrick.org"
+    set request.SSLConfiguration="ISC.FeatureTracker.SSL.Config"
+    ;
+    do request.SetParam("TeamID",teamId)
+    ;
+    set sc=request.Get("/pt/Club/")
+    set response=request.HttpResponse.Data.Read(999999)
+    ;
+    quit sc
+    ;
+    ; set sc=$$ObterDadosTime^Scrap(426888,.tabRetorno)
+ObterDadosTime(teamId,tabRetorno)   ;
+    new sc
+    set sc=1
+    ;
+    new template,stream,response
+    ;
+    kill tabRetorno
+    ;
+    set sc=$$GetTeam^Scrap(teamId,.response)
+    ;
+    set stream = ##class(%Stream.GlobalCharacter).%New()
+    do stream.Write(response)
+    ;
+    set template = "<div, class=teamNameTitle>{teamName}</div>"
+    set template=template_"<div, class=teamLogo><a,href={teamLogo}></div>"
+    set template=template_"<div, class=float_left teamInfo><a,href={managerLink},class=inner ></div>"
+    set sc=##class(Ens.Util.HTML.Parser).Parse(stream,template,.tabRetorno)
+    ;
+    set tag=""
+    for  set tag=$order(tabRetorno(tag)) quit:tag=""  do
+    . ;
+    . set dados=$get(tabRetorno(tag))
+    . set tabRetorno(tag)=$zstrip($replace(dados,$c(13,10),""),"<>"," ")
+    . ;
+    ;
+    set managerLink=$get(tabRetorno("managerLink"))
+    set managerId=$piece($piece(managerLink,"userId=",2),"&amp",1)
+    set tabRetorno("managerId")=managerId
+    ;
+    quit sc
+    ;
+    ; set sc=$$GetTeamMatchHistory^Scrap(426888,86,.response)
+GetTeamMatchHistory(teamId,season,response)    ;
+    new sc
+    set sc=1
+    ;
+    new request
+    ;
+    set season=$get(season)
+    ;
+    set response=""
+    ;
+    set request=##class(%Net.HttpRequest).%New()
+    ;
+    set request.Server="www83.hattrick.org"
+    set request.SSLConfiguration="ISC.FeatureTracker.SSL.Config"
+    ;
+    do:season'="" request.SetParam("season",season)
+    do request.SetParam("TeamID",teamId)
+    ;
+    set sc=request.Get("/pt/Club/Matches/Archive.aspx")
+    set response=request.HttpResponse.Data.Read(999999)
+    ;
+    quit sc
+    ;
+    ; set sc=$$ObterPartidasTimeTemporada^Scrap(426888,86,.tabRetorno)
+ObterPartidasTimeTemporada(teamId,season,tabRetorno)   ;
+    new sc
+    set sc=1
+    ;
+    new template,stream,response
+    ;
+    kill tabRetorno
+    ;
+    set sc=$$GetTeamMatchHistory^Scrap(teamId,season,.response)
+    ;
+    set stream = ##class(%Stream.GlobalCharacter).%New()
+    do stream.Write(response)
+    ;
+    set template="<div, class=box mainBox ><table, class=indent>+<td><a,href={matchLink}></td>+</table></div>"
+    ;
+    set sc=##class(Ens.Util.HTML.Parser).Parse(stream,template,.tabParse)
+    ;
+    set seqLink=""
+    for  set seqLink=$order(tabParse("matchLink",seqLink)) quit:seqLink=""  do
+    . ;
+    . set link=$get(tabParse("matchLink",seqLink))
+    . set matchId=$piece($piece(link,"/pt/Club/Matches/Match.aspx?matchId=",2),"&amp",1)
+    . quit:matchId=""
+    . set tabRetorno(matchId)=""
+    . ;
+    ;
+    quit sc
+    ;
+    ; set sc=$$GetMatch^Scrap(720367058,.response)
+GetMatch(matchId,response)    ;
+    new sc
+    set sc=1
+    ;
+    new request
+    ;
+    set season=$get(season)
+    ;
+    set response=""
+    ;
+    set request=##class(%Net.HttpRequest).%New()
+    ;
+    set request.Server="www83.hattrick.org"
+    set request.SSLConfiguration="ISC.FeatureTracker.SSL.Config"
+    ;
+    do request.SetParam("matchId",matchId)
+    ;
+    set sc=request.Get("/pt/Club/Matches/Match.aspx")
+    set response=request.HttpResponse.Data.Read(999999)
+    ;
+    quit sc
+    ;
