@@ -5,7 +5,11 @@ Property PlayerID As %Integer;
 
 Property Name As %String;
 
-Property Team As Game.Team(CAPTION = "Game.Team");
+Property LastName As %String;
+
+Property Team As %Integer;
+
+// Property Team As Game.Team(CAPTION = "Game.Team");
 
 Index main On PlayerID [ IdKey, PrimaryKey, Unique ];
 
@@ -22,6 +26,9 @@ Storage Default
 </Value>
 <Value name="3">
 <Value>Team</Value>
+</Value>
+<Value name="4">
+<Value>LastName</Value>
 </Value>
 </Data>
 <DataLocation>^Game.PlayerD</DataLocation>

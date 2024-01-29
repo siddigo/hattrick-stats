@@ -1,17 +1,27 @@
 Class Game.MatchGoal Extends %Persistent [ ClassType = persistent ]
 {
 
-Relationship MatchID As Game.Match [ Cardinality = parent, Inverse = MatchGoals ];
+Property TeamID As %Integer;
 
-Property TeamID As Game.Team(CAPTION = "Game.Team");
+// Property TeamID As Game.Team(CAPTION = "Game.Team");
 
 Property GoalID As %Integer;
 
-Property PlayerID As Game.Player(CAPTION = "Player.Team");
+// Property PlayerID As Game.Player(CAPTION = "Player.Team");
 
-Property PlayerTeamID As Game.Team(CAPTION = "Game.Team");
+Property PlayerID As %Integer;
 
-Property MatchTime As %Integer;
+Property PlayerTeamID As %Integer;
+
+// Property PlayerTeamID As Game.Team(CAPTION = "Game.Team");
+
+Property MatchTimeMinute As %Integer;
+
+Property MatchTimeSecond As %Integer;
+
+Property MatchPart As %Integer;
+
+Relationship Match As Game.Partida [ Cardinality = parent, Inverse = Goals ];
 
 Index main On GoalID [ IdKey, PrimaryKey, Unique ];
 
@@ -37,10 +47,19 @@ Storage Default
 <Value name="5">
 <Value>MatchTime</Value>
 </Value>
+<Value name="6">
+<Value>MatchPart</Value>
+</Value>
+<Value name="7">
+<Value>MatchTimeMinute</Value>
+</Value>
+<Value name="8">
+<Value>MatchTimeSecond</Value>
+</Value>
 </Data>
-<DataLocation>{%%PARENT}("MatchGoals")</DataLocation>
+<DataLocation>{%%PARENT}("Goals")</DataLocation>
 <DefaultData>MatchGoalDefaultData</DefaultData>
-<IdLocation>^Game.MatchC("MatchGoals")</IdLocation>
+<IdLocation>^Game.PartidaC("Goals")</IdLocation>
 <IndexLocation>^Game.MatchGoalI</IndexLocation>
 <StreamLocation>^Game.MatchGoalS</StreamLocation>
 <Type>%Storage.Persistent</Type>

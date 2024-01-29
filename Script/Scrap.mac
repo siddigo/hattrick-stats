@@ -39,8 +39,8 @@ ObterDadosTime(teamId,tabRetorno)   ;
     do stream.Write(response)
     ;
     set template = "<div, class=teamNameTitle>{teamName}</div>"
-    set template=template_"<div, class=teamLogo><a,href={teamLogo}></div>"
-    set template=template_"<div, class=float_left teamInfo><a,href={managerLink},class=inner ></div>"
+    set template=template_"=<div, class=teamLogo><a,href={teamLogo}></div>"
+    set template=template_"=<div, class=float_left teamInfo><a,href={managerLink},class=inner ></div>"
     set sc=##class(Ens.Util.HTML.Parser).Parse(stream,template,.tabRetorno)
     ;
     set tag=""
@@ -132,3 +132,212 @@ GetMatch(matchId,response)    ;
     ;
     quit sc
     ;
+    ; set sc=$$ObterDadosPartida^Scrap(720367058,.jsonPartida)
+ObterDadosPartida(matchId,jsonPartida)   ;
+    new sc
+    set sc=1
+    ;
+    new template,stream,response,matcher
+    ;
+    set sc=$$GetMatch^Scrap(matchId,.response)
+    ;
+    set matcher=##class(%Regex.Matcher).%New("(window\.HT\.ngMatch\.data.*memorialEvent"":""""\})")
+    ;
+    set matcher.Text=response
+    ;
+    set jsonPartida={}
+    if matcher.Locate() {
+        ;
+       set jsonPartida={}.%FromJSON($piece(matcher.Group,"= ",2,*))
+    }
+    ;
+    quit sc
+    ;
+    ; set sc=$$GravarPartida^Scrap(jsonPartida,forcar)
+GravarPartida(jsonPartida,forcar) ;
+    new sc
+    set sc=1
+    ;
+    set forcar=$get(forcar)
+    ;
+    set partida=""
+    ;
+    if ##class(Game.Partida).%ExistsId(jsonPartida.matchId) do  quit:'forcar sc
+    . quit:'forcar 
+    . set partida=##class(Game.Partida).%OpenId(jsonPartida.matchId)
+    ;
+    set:partida="" partida=##class(Game.Partida).%New(),partida.MatchID=jsonPartida.matchId
+    ;
+    if ##class(Game.Team).%ExistsId(jsonPartida.homeTeamId)  do
+    . set partida.TeamHome=##class(Game.Team).%OpenId(jsonPartida.homeTeamId)
+    ;
+    if partida.TeamHome="" do
+    . set sc=$$BuscarTime^Scrap(jsonPartida.homeTeamId)
+    . set partida.TeamHome=##class(Game.Team).%OpenId(jsonPartida.homeTeamId)
+    ;
+    if ##class(Game.Team).%ExistsId(jsonPartida.awayTeamId)  do
+    . set partida.TeamAway=##class(Game.Team).%OpenId(jsonPartida.awayTeamId)
+    ;
+    if partida.TeamAway="" do
+    . set sc=$$BuscarTime^Scrap(jsonPartida.awayTeamId)
+    . set partida.TeamAway=##class(Game.Team).%OpenId(jsonPartida.awayTeamId)
+    ;
+    set sc=partida.%Save()
+    if 'sc quit sc
+    ;
+    set jsonGols=jsonPartida.scorers
+    set jsonJogadores=jsonPartida.players
+    ;
+    set sc=$$GravarGolsPartida^Scrap(jsonPartida.homeTeamId,jsonPartida.awayTeamId,jsonPartida.players,partida,jsonGols)
+    ;
+    quit sc
+    ;
+    ; set sc=$$ObterTabJogadoresPartida^Scrap(jsonJogadores,.tabJogadores)
+ObterTabJogadoresPartida(jsonJogadores,tabJogadores)
+    new sc
+    set sc=1
+    ;
+    kill tabJogadores
+    ;
+    for i=0:1:jsonJogadores.%Size()-1 do
+    . ;
+    . set jsonJogador=jsonJogadores.%Get(i)
+    . ;
+    . set playerId=jsonJogador.playerId
+    . set teamId=jsonJogador.teamId
+    . set firstName=jsonJogador.firstName
+    . set lastName=jsonJogador.lastName
+    . ;
+    . set tabJogadores(teamId,playerId)=firstName_"^"_lastName
+    . ;
+    ;
+    quit sc
+    ; set sc=$$BuscarPartida^Scrap(720367058)
+BuscarPartida(matchId,forcar) ;
+    new sc
+    set sc=1
+    ;
+    new jsonPartida
+    set forcar=$get(forcar)
+    ;
+    set sc=$$ObterDadosPartida^Scrap(matchId,.jsonPartida)
+    if 'sc quit sc
+    ;
+    set sc=$$GravarPartida^Scrap(jsonPartida,forcar)
+    ;
+    quit sc
+    ;
+    ; set sc=$$BuscarTime^Scrap(1637868,1)
+BuscarTime(teamId,forcar) ;
+    new sc
+    set sc=1
+    ;
+    new tabRetorno
+    ;
+    set sc=$$ObterDadosTime^Scrap(teamId,.tabRetorno)
+    ;
+    set team=""
+    if ##class(Game.Team).%ExistsId(teamId) do  quit:'forcar
+    . quit:'forcar
+    . set team=##class(Game.Team).%OpenId(teamId)
+    ;
+    set:team="" team=##class(Game.Team).%New()
+    ;
+    set team.TeamID=teamId
+    set team.Name=$get(tabRetorno("teamName"))
+    set team.Logo=$get(tabRetorno("teamLogo"))
+    set team.Manager=$get(tabRetorno("managerId"))
+    ;
+    set sc=team.%Save()
+    ;
+    quit sc
+    ;
+    ; set sc=$$GravarGolsPartida^Scrap(homeTeamId,awayTeamId,jsonJogadores,partida,jsonGols)
+GravarGolsPartida(homeTeamId,awayTeamId,jsonJogadores,partida,jsonGols) ;
+    new sc
+    set sc=1
+    ;
+    set sc=$$ObterTabJogadoresPartida^Scrap(jsonJogadores,.tabJogadores)
+    set sc=$$GravarJogadoresPartida^Scrap(.tabJogadores,.tabStatus)
+    ;
+    kill tabStatus
+    set (golsCasa,golsFora)=0
+    ;
+    for i=0:1:jsonGols.%Size()-1 do
+    . ;
+    . set jsonGol=jsonGols.%Get(i)
+    . ;
+    . set teamGoalId=""
+    . if jsonGol.homeGoals>golsCasa set golsCasa=jsonGol.homeGoals,teamGoalId=homeTeamId
+    . if jsonGol.awayGoals>golsFora set golsFora=jsonGol.awayGoals,teamGoalId=awayTeamId
+    . ;
+    . set playerId=jsonGol.playerId
+    . ;
+    . if $data(tabJogadores(homeTeamId,playerId)) set teamPlayerId=homeTeamId
+    . if $data(tabJogadores(awayTeamId,playerId)) set teamPlayerId=awayTeamId
+    . ;
+    . set gol=""
+    . if ##class(Game.MatchGoal).%ExistsId(partida.MatchID_"||"_(i+1)) do
+    . set gol=##class(Game.MatchGoal).%OpenId(partida.MatchID_"||"_(i+1))
+    . ;
+    . set:gol="" gol=##class(Game.MatchGoal).%New()
+    . ; 
+    . set gol.GoalID=(i+1)
+    . set gol.TeamID=teamGoalId
+    . set gol.PlayerID=playerId
+    . set gol.PlayerTeamID=teamPlayerId
+    . set gol.MatchPart=jsonGol.matchPart
+    . set gol.MatchTimeMinute=jsonGol.matchMinute
+    . set gol.MatchTimeSecond=jsonGol.matchMinuteSecond
+    . set gol.Match=partida
+    . ;
+    . set sc=gol.%Save()
+    . set tabStatus(i)=sc
+    ;
+    quit sc
+    ;
+    ; set sc=$$GravarJogadoresPartida^Scrap(tabJogadores,.tabStatus)
+GravarJogadoresPartida(tabJogadores,tabStatus) ;
+    new sc
+    set sc=1
+    ;
+    kill tabStatus
+    ;
+    set idTime=""
+    for  set idTime=$order(tabJogadores(idTime)) quit:idTime=""  do
+    . ;
+    . set idJogador=""
+    . for  set idJogador=$order(tabJogadores(idTime,idJogador)) quit:idJogador=""  do
+    . . set dados=$get(tabJogadores(idTime,idJogador))
+    . . ;
+    . . set jogador=""
+    . . if ##class(Game.Player).%ExistsId(idJogador) do
+    . . set jogador=##class(Game.Player).%OpenId(idJogador)
+    . . ;
+    . . set:jogador="" jogador=##class(Game.Player).%New()
+    . . ; 
+    . . set jogador.PlayerID=(idJogador)
+    . . set jogador.Name=$piece(dados,"^",1)
+    . . set jogador.LastName=$piece(dados,"^",2)
+    . . set jogador.Team=idTime
+    . . ;
+    . . set sc=jogador.%Save()
+    . . set tabStatus(idTime,idJogador)=sc
+    ;
+    quit sc
+    ;
+    ; set sc=$$BuscarPartidasTemporada^Scrap(teamId,season)
+BuscarPartidasTemporada(teamId,season)
+    new sc,tabRetorno,matchId
+    set sc=1
+    ;
+    set sc=$$ObterPartidasTimeTemporada^Scrap(teamId,season,.tabRetorno)
+    w !, "Obtido partidas do time: "_sc
+    ;
+    set matchId=""
+    for  set matchId=$order(tabRetorno(matchId)) quit:matchId=""  do
+    . set sc=$$BuscarPartida^Scrap(matchId)
+    . w !, "Obtido partida "_matchId_": "_sc
+    ;
+    ;
+    quit sc

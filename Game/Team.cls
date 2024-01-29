@@ -5,9 +5,11 @@ Property TeamID As %Integer;
 
 Property Name As %String;
 
-Property Logo As %String;
+Property Logo As %String(MAXLEN = 200);
 
-Property Manager As Game.User(CAPTION = "Game.User");
+// Property Manager As Game.User(CAPTION = "Game.User");
+
+Property Manager As %Integer;
 
 Relationship MatchHome As Game.Match [ Cardinality = many, Inverse = TeamHome ];
 
